@@ -4,15 +4,127 @@ import com.intentguard.app.model.*
 
 object RiskAnalyzer {
 
+    private val legitimateUseCases = mapOf(
+        // Communication apps - video/voice calls, screen sharing
+        "whatsapp" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "telegram" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "messenger" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "discord" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION"),
+        "slack" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "teams" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "zoom" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "skype" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "signal" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+
+        // Payment apps - QR scanning, OTP, UPI contacts
+        "payment" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS"),
+        "bank" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS", "CALL_PHONE"),
+        "pay" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS"),
+        "upi" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS"),
+        "phonepe" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS"),
+        "paytm" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS"),
+        "bhim" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS"),
+
+        // Telecom apps - manage SIM, calls, messages
+        "airtel" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS", "CALL_PHONE", "READ_PHONE_STATE"),
+        "jio" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS", "CALL_PHONE", "READ_PHONE_STATE"),
+        "vodafone" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS", "CALL_PHONE", "READ_PHONE_STATE"),
+        "vi" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS", "CALL_PHONE"),
+
+        // Social media - content creation
+        "instagram" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION"),
+        "facebook" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION"),
+        "snapchat" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION"),
+        "tiktok" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION"),
+        "twitter" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION"),
+        "linkedin" to setOf("CAMERA", "RECORD_AUDIO", "READ_CONTACTS"),
+        "youtube" to setOf("CAMERA", "RECORD_AUDIO", "ACCESS_FINE_LOCATION"),
+
+        // Delivery / ride apps
+        "zomato" to setOf("ACCESS_FINE_LOCATION", "CAMERA", "CALL_PHONE"),
+        "swiggy" to setOf("ACCESS_FINE_LOCATION", "CAMERA", "CALL_PHONE"),
+        "uber" to setOf("ACCESS_FINE_LOCATION", "CAMERA", "CALL_PHONE", "READ_CONTACTS"),
+        "ola" to setOf("ACCESS_FINE_LOCATION", "CAMERA", "READ_CONTACTS", "CALL_PHONE"),
+        "blinkit" to setOf("ACCESS_FINE_LOCATION", "CAMERA"),
+        "dunzo" to setOf("ACCESS_FINE_LOCATION", "CAMERA", "CALL_PHONE"),
+
+        // Caller ID apps
+        "truecaller" to setOf("READ_CONTACTS", "CALL_PHONE", "READ_PHONE_STATE", "READ_SMS"),
+
+        // Voice assistants
+        "alexa" to setOf("RECORD_AUDIO", "CAMERA", "ACCESS_FINE_LOCATION"),
+        "google" to setOf("RECORD_AUDIO", "CAMERA", "ACCESS_FINE_LOCATION", "READ_CONTACTS"),
+        "assistant" to setOf("RECORD_AUDIO", "CAMERA", "ACCESS_FINE_LOCATION"),
+
+        // Microsoft ecosystem apps
+        "microsoft" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS", "CALL_PHONE"),
+        "windows" to setOf("CAMERA", "READ_CONTACTS", "READ_SMS", "CALL_PHONE"),
+        "outlook" to setOf("CAMERA", "READ_CONTACTS", "CALL_PHONE"),
+        "m365 copilot" to setOf("RECORD_AUDIO", "READ_CONTACTS"),
+        "seeing ai" to setOf("CAMERA", "RECORD_AUDIO"),
+        "authenticator" to setOf("CAMERA"),
+        "link to windows" to setOf("READ_CONTACTS", "READ_SMS", "CALL_PHONE"),
+
+        // E-commerce
+        "amazon" to setOf("CAMERA", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"),
+        "flipkart" to setOf("CAMERA", "ACCESS_FINE_LOCATION"),
+        "myntra" to setOf("CAMERA", "ACCESS_FINE_LOCATION"),
+
+        // Emergency/safety apps
+        "112" to setOf("ACCESS_FINE_LOCATION", "CALL_PHONE", "CAMERA", "RECORD_AUDIO"),
+        "emergency" to setOf("ACCESS_FINE_LOCATION", "CALL_PHONE", "CAMERA")
+    )
+
+    private fun hasLegitimateNeed(app: AppInfo, permission: String): Boolean {
+        val appNameLower = app.appName.lowercase()
+        val packageLower = app.packageName.lowercase()
+
+        for ((keyword, allowedPerms) in legitimateUseCases) {
+            if (appNameLower.contains(keyword) || packageLower.contains(keyword)) {
+                if (allowedPerms.any { permission.endsWith(it) }) {
+                    return true
+                }
+            }
+        }
+
+        return when (app.category) {
+            AppCategory.COMMUNICATION -> permission.endsWith("CAMERA") ||
+                    permission.endsWith("RECORD_AUDIO") ||
+                    permission.endsWith("READ_CONTACTS")
+
+            AppCategory.SOCIAL_MEDIA -> permission.endsWith("CAMERA") ||
+                    permission.endsWith("RECORD_AUDIO") ||
+                    permission.endsWith("READ_CONTACTS") ||
+                    permission.endsWith("ACCESS_FINE_LOCATION")
+
+            AppCategory.NAVIGATION -> permission.endsWith("ACCESS_FINE_LOCATION") ||
+                    permission.endsWith("CAMERA") ||
+                    permission.endsWith("CALL_PHONE")
+
+            AppCategory.MEDIA -> permission.endsWith("CAMERA") ||
+                    permission.endsWith("RECORD_AUDIO")
+
+            AppCategory.FINANCE -> permission.endsWith("CAMERA") ||
+                    permission.endsWith("READ_SMS") ||
+                    permission.endsWith("READ_CONTACTS")
+
+            AppCategory.SHOPPING -> permission.endsWith("CAMERA") ||
+                    permission.endsWith("ACCESS_FINE_LOCATION")
+
+            else -> false
+        }
+    }
+
     private val suspicionPatterns = listOf(
         SuspicionPattern(
             name = "Utility Overreach",
             description = "Utility apps rarely need sensitive sensors",
             checkFn = { app ->
                 app.category == AppCategory.UTILITY &&
-                        (app.hasPermission("RECORD_AUDIO") || app.hasPermission("CAMERA"))
+                        ((app.hasPermission("RECORD_AUDIO") && !hasLegitimateNeed(app, "RECORD_AUDIO")) ||
+                                (app.hasPermission("CAMERA") && !hasLegitimateNeed(app, "CAMERA")))
             },
-            severityMultiplier = 2.5f
+            severityMultiplier = 2.8f
         ),
 
         SuspicionPattern(
@@ -21,11 +133,14 @@ object RiskAnalyzer {
             checkFn = { app ->
                 app.category == AppCategory.GAMING &&
                         app.hasPermission("ACCESS_FINE_LOCATION") &&
-                        !app.appName.lowercase().contains("pokemon") &&
-                        !app.appName.lowercase().contains("ingress") &&
-                        !app.appName.lowercase().contains("go")
+                        !app.appName.lowercase().let { name ->
+                            name.contains("pokemon") || name.contains("ingress") ||
+                                    name.contains(" go") || name.contains("multiplayer") ||
+                                    name.contains("online") || name.contains("world") ||
+                                    name.contains("royale") || name.contains("battle")
+                        }
             },
-            severityMultiplier = 1.8f
+            severityMultiplier = 2.0f
         ),
 
         SuspicionPattern(
@@ -34,74 +149,90 @@ object RiskAnalyzer {
             checkFn = { app ->
                 app.hasPermission("RECORD_AUDIO") &&
                         app.services.any { it.contains("background", ignoreCase = true) } &&
+                        !hasLegitimateNeed(app, "RECORD_AUDIO") &&
                         app.category !in setOf(AppCategory.COMMUNICATION, AppCategory.MEDIA)
             },
-            severityMultiplier = 3.0f
+            severityMultiplier = 3.5f
         ),
 
         SuspicionPattern(
             name = "Unexpected Contact Access",
-            description = "App category typically doesn't require contacts",
+            description = "App doesn't need contacts for its purpose",
             checkFn = { app ->
                 app.hasPermission("READ_CONTACTS") &&
+                        !hasLegitimateNeed(app, "READ_CONTACTS") &&
                         app.category !in setOf(
                     AppCategory.COMMUNICATION,
                     AppCategory.SOCIAL_MEDIA,
                     AppCategory.PRODUCTIVITY
                 )
             },
-            severityMultiplier = 2.0f
-        ),
-
-        SuspicionPattern(
-            name = "Permission Hoarding",
-            description = "App requests many unrelated sensitive permissions",
-            checkFn = { app ->
-                val sensitiveCounts = listOf(
-                    app.hasPermission("RECORD_AUDIO"),
-                    app.hasPermission("CAMERA"),
-                    app.hasPermission("ACCESS_FINE_LOCATION"),
-                    app.hasPermission("READ_CONTACTS")
-                ).count { it }
-                sensitiveCounts >= 3
-            },
             severityMultiplier = 2.2f
         ),
 
         SuspicionPattern(
-            name = "Flashlight Camera Access",
-            description = "Flashlight apps don't need full camera permission",
+            name = "Excessive Permissions",
+            description = "App has many permissions without clear justification",
             checkFn = { app ->
-                app.appName.lowercase().contains("flashlight") &&
-                        app.hasPermission("CAMERA")
-            },
-            severityMultiplier = 2.8f
-        ),
+                val suspiciousPerms = listOf(
+                    "RECORD_AUDIO" to !hasLegitimateNeed(app, "RECORD_AUDIO"),
+                    "CAMERA" to !hasLegitimateNeed(app, "CAMERA"),
+                    "ACCESS_FINE_LOCATION" to !hasLegitimateNeed(app, "ACCESS_FINE_LOCATION"),
+                    "READ_CONTACTS" to !hasLegitimateNeed(app, "READ_CONTACTS"),
+                    "READ_SMS" to !hasLegitimateNeed(app, "READ_SMS"),
+                    "CALL_PHONE" to !hasLegitimateNeed(app, "CALL_PHONE")
+                ).filter { (perm, isSuspicious) ->
+                    app.hasPermission(perm) && isSuspicious
+                }.size
 
-        SuspicionPattern(
-            name = "Calculator Location Tracking",
-            description = "Simple utility apps don't need location access",
-            checkFn = { app ->
-                (app.appName.lowercase().contains("calculator") ||
-                        app.appName.lowercase().contains("cleaner")) &&
-                        app.hasPermission("ACCESS_FINE_LOCATION")
+                suspiciousPerms >= 3
             },
             severityMultiplier = 2.5f
         ),
 
         SuspicionPattern(
-            name = "Unexpected Audio Recording",
-            description = "App type doesn't typically need audio recording",
+            name = "Flashlight Camera Abuse",
+            description = "Flashlight only needs flash LED, not full camera",
+            checkFn = { app ->
+                app.appName.lowercase().let { name ->
+                    name.contains("flashlight") || name.contains("torch")
+                } &&
+                        app.hasPermission("CAMERA") &&
+                        !app.appName.lowercase().contains("camera")
+            },
+            severityMultiplier = 3.0f
+        ),
+
+        SuspicionPattern(
+            name = "Utility Location Tracking",
+            description = "Simple utilities don't need location",
+            checkFn = { app ->
+                app.appName.lowercase().let { name ->
+                    (name.contains("calculator") ||
+                            name.contains("cleaner") ||
+                            name.contains("battery") ||
+                            name.contains("booster")) &&
+                            !name.contains("map") &&
+                            !name.contains("travel")
+                } &&
+                        app.hasPermission("ACCESS_FINE_LOCATION")
+            },
+            severityMultiplier = 2.8f
+        ),
+
+        SuspicionPattern(
+            name = "Unjustified Audio Access",
+            description = "App has microphone without clear need",
             checkFn = { app ->
                 app.hasPermission("RECORD_AUDIO") &&
+                        !hasLegitimateNeed(app, "RECORD_AUDIO") &&
                         app.category in setOf(
                     AppCategory.UTILITY,
-                    AppCategory.FINANCE,
-                    AppCategory.SHOPPING,
-                    AppCategory.HEALTH_FITNESS
+                    AppCategory.HEALTH_FITNESS,
+                    AppCategory.UNKNOWN
                 )
             },
-            severityMultiplier = 2.3f
+            severityMultiplier = 2.4f
         )
     )
 
@@ -138,9 +269,10 @@ object RiskAnalyzer {
 
     private fun calculateSeverity(pattern: SuspicionPattern, app: AppInfo): Severity {
         val baseScore = pattern.severityMultiplier
+
         val adjustedScore = when {
-            app.isSystemApp -> baseScore * 0.3f
-            app.category == AppCategory.UNKNOWN -> baseScore * 1.3f
+            app.isSystemApp -> baseScore * 0.15f
+            app.category == AppCategory.UNKNOWN -> baseScore * 1.5f
             else -> baseScore
         }
 
@@ -154,60 +286,50 @@ object RiskAnalyzer {
     private fun calculateRiskScore(app: AppInfo, issues: List<DetectedIssue>): Float {
         var score = issues.sumOf { issue ->
             when (issue.severity) {
-                Severity.HIGH -> 3.0
-                Severity.MEDIUM -> 1.5
-                Severity.LOW -> 0.5
+                Severity.HIGH -> 3.5
+                Severity.MEDIUM -> 1.8
+                Severity.LOW -> 0.6
             }
         }.toFloat()
 
         if (app.category == AppCategory.UNKNOWN && issues.isNotEmpty()) {
-            score += 1.0f
+            score += 1.5f
         }
 
         return score
     }
 
     private fun generateExplanation(pattern: SuspicionPattern, app: AppInfo): String {
-        val name = app.appName
-        val cat = app.category.name.lowercase().replace('_', ' ')
-
         return when (pattern.name) {
             "Utility Overreach" -> when {
                 app.hasPermission("RECORD_AUDIO") && app.hasPermission("CAMERA") ->
-                    "Has microphone and camera access. Unusual for ${cat} apps—could capture audio/video without notice."
+                    "Has mic + camera without clear business need. Could spy via audio/video."
                 app.hasPermission("RECORD_AUDIO") ->
-                    "Can record audio. ${cat.capitalize()} apps rarely need microphone access for core features."
+                    "Microphone access unjustified for this utility type."
                 else ->
-                    "Has camera access. Could take photos/videos without your knowledge."
+                    "Camera access without legitimate reason. Risk of hidden photo capture."
             }
 
             "Gaming Location Tracker" ->
-                "Tracks precise GPS location. Non-AR games don't need this—may profile your movements for ads."
+                "Tracks GPS in non-location game. Used for ad targeting and behavior profiling."
 
             "Background Audio Monitoring" ->
-                "Microphone + background service = potential 24/7 listening. High risk for ${cat} apps."
+                "Mic + background service combo. High risk of 24/7 eavesdropping."
 
             "Unexpected Contact Access" ->
-                "${cat.capitalize()} apps don't typically need contacts. May build social graph for ad targeting."
+                "Contact list access serves no clear purpose. May harvest data for ad networks."
 
-            "Permission Hoarding" -> {
-                val perms = buildList {
-                    if (app.hasPermission("RECORD_AUDIO")) add("mic")
-                    if (app.hasPermission("CAMERA")) add("camera")
-                    if (app.hasPermission("ACCESS_FINE_LOCATION")) add("location")
-                    if (app.hasPermission("READ_CONTACTS")) add("contacts")
-                }
-                "Has ${perms.joinToString(", ")} access—more than needed for stated purpose."
-            }
+            "Excessive Permissions" ->
+                "Multiple unjustified permissions suggest aggressive data collection strategy."
 
-            "Flashlight Camera Access" ->
-                "Flashlight only needs flash LED control, not full camera. Could secretly take photos."
+            "Flashlight Camera Abuse" ->
+                "Known scam pattern: flashlight apps only need flash LED control, not full camera API."
 
-            "Calculator Location Tracking" ->
-                "Calculators/cleaners don't need to know where you are. Tracks daily routines and work location."
+            "Utility Location Tracking" ->
+                "Simple utilities never need GPS. Classic privacy violation indicator."
 
-            "Unexpected Audio Recording" ->
-                "${cat.capitalize()} apps rarely need audio. Could eavesdrop on conversations for voice data."
+            "Unjustified Audio Access" ->
+                "Microphone access without legitimate voice feature. Potential conversation monitoring."
 
             else -> pattern.description
         }

@@ -1,8 +1,11 @@
 package com.intentguard.app
 
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
@@ -20,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -100,7 +104,6 @@ class ScanViewModel(private val packageManager: PackageManager) : ViewModel() {
 
         val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
 
-        // Get only GRANTED permissions (not just requested)
         val grantedPermissions = mutableSetOf<String>()
         packageInfo.requestedPermissions?.forEachIndexed { index, permission ->
             val flags = packageInfo.requestedPermissionsFlags?.get(index) ?: 0
@@ -119,7 +122,7 @@ class ScanViewModel(private val packageManager: PackageManager) : ViewModel() {
         val app = AppInfo(
             packageName = packageName,
             appName = appName,
-            permissions = grantedPermissions, // Only granted permissions
+            permissions = grantedPermissions,
             services = services,
             isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
             installTime = packageInfo.firstInstallTime,
@@ -397,6 +400,7 @@ fun FilterBar(options: FilterOptions, onUpdate: (FilterOptions) -> Unit) {
 @Composable
 fun ExpandableRiskCard(analysis: AppAnalysis) {
     var isExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Card(
         modifier = Modifier
@@ -411,7 +415,6 @@ fun ExpandableRiskCard(analysis: AppAnalysis) {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Always visible: App name and risk badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -436,7 +439,6 @@ fun ExpandableRiskCard(analysis: AppAnalysis) {
                 RiskBadge(analysis.riskScore)
             }
 
-            // Expandable content
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically() + fadeIn(),
@@ -445,7 +447,6 @@ fun ExpandableRiskCard(analysis: AppAnalysis) {
                 Column {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // For high-risk apps, show dangerous permissions first
                     if (analysis.hasCriticalIssues) {
                         DangerousPermissionsSummary(analysis.app)
                         Spacer(modifier = Modifier.height(12.dp))
@@ -453,7 +454,6 @@ fun ExpandableRiskCard(analysis: AppAnalysis) {
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // Detailed issues
                     Text(
                         text = "Privacy Concerns:",
                         style = MaterialTheme.typography.titleSmall,
@@ -466,7 +466,22 @@ fun ExpandableRiskCard(analysis: AppAnalysis) {
                         IssueRow(issue)
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // MANAGE PERMISSIONS BUTTON
+                    OutlinedButton(
+                        onClick = {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", analysis.app.packageName, null)
+                            }
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("⚙️ Manage Permissions")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
                         text = generateRecommendation(analysis),
@@ -601,10 +616,10 @@ fun IssueRow(issue: DetectedIssue) {
 fun generateRecommendation(analysis: AppAnalysis): String {
     return when {
         analysis.hasCriticalIssues ->
-            "💡 Go to Settings → Apps → ${analysis.app.appName} → Permissions to revoke unnecessary access."
+            "💡 Tap 'Manage Permissions' above to revoke unnecessary access."
         analysis.riskScore >= 5.0f ->
-            "💡 Consider if you need all features this app provides, or find alternatives with fewer permissions."
+            "💡 Consider if you need all features this app provides."
         else ->
-            "💡 Monitor battery drain and data usage. Investigate if you notice unusual activity."
+            "💡 Monitor battery drain and data usage for unusual activity."
     }
 }
