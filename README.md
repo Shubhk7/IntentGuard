@@ -63,53 +63,81 @@ IntentGuard/
 ├── build.gradle.kts               # Root build configuration
 └── settings.gradle.kts            # Project repositories and module setup
 
+```
+## 🚀 Getting Started
 
+### Prerequisites
 
-🚀 Getting Started
-Prerequisites
-Android Studio: Iguana (2023.2.1) or newer
-JDK: Version 17+
-Android SDK: API 34 (Android 14)
-Minimum OS Support: Android 8.0 (API Level 26)
-Clone & Run
+- Android Studio: Iguana (2023.2.1) or newer
+- JDK: Version 17+
+- Android SDK: API 34 (Android 14)
+- Minimum OS Support: Android 8.0 (API Level 26)
+
+### Clone & Run
+
 Clone the repository:
 
-bash
-
-
+```bash
 git clone https://github.com/Shubhk7/IntentGuard.git
 cd IntentGuard
-Open in Android Studio and let Gradle sync.
+```
 
-Build via terminal:
+Open the project in Android Studio and let Gradle sync.
 
-Linux / macOS:
-bash
+### Build via Terminal
 
+**Linux / macOS:**
 
+```bash
 ./gradlew assembleDebug
-Windows:
-powershell
+```
 
+**Windows:**
 
+```powershell
 .\gradlew.bat assembleDebug
-Install to device:
+```
 
-bash
+### Install to Device
 
-
+```bash
 ./gradlew installDebug
-🔑 Permissions & Transparency
-IntentGuard declares:
+```
+## 🔑 Permissions & Transparency
 
-android.permission.QUERY_ALL_PACKAGES: Required on Android 11+ (API 30+) to inspect installed applications and analyze their granted permissions.
-Privacy Guarantee: IntentGuard never transmits your installed apps or device data. All analysis is performed completely locally in memory.
+IntentGuard declares the following permission:
 
-🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
+```xml
+<uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+```
 
-Fork the Project
-Create your Feature Branch (git checkout -b feature/AmazingFeature)
-Commit your Changes (git commit -m 'Add some AmazingFeature')
-Push to the Branch (git push origin feature/AmazingFeature)
-Open a Pull Request
+`QUERY_ALL_PACKAGES` is used to inspect installed applications and analyze their requested and granted permissions on supported Android versions.
+
+### 🔒 Privacy Guarantee
+
+IntentGuard never transmits your installed apps or device data.
+
+- No internet telemetry
+- No external trackers
+- No cloud processing
+- All analysis is performed locally on the device
+
+  
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+
+1. Fork the Project
+2. Create your Feature Branch:
+   ```bash
+   git checkout -b feature/AmazingFeature
+   ```
+3. Commit your Changes:
+   ```bash
+   git commit -m "Add some AmazingFeature"
+   ```
+4. Push to the Branch:
+   ```bash
+   git push origin feature/AmazingFeature
+   ```
+5. Open a Pull Request
